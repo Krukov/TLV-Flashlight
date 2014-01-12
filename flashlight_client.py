@@ -19,7 +19,7 @@ class Flashlight(object):
         self.status = status
         self.host = host
         self.port = port
-        self.color = None
+        self.color = '#ffffff'
         self._null_command()
 
     def connect(self):
@@ -27,7 +27,7 @@ class Flashlight(object):
         self.stream = IOStream(s)
         self.stream.connect((self.host, self.port), self._callback)
         self.stream.reading()
-        logging.info('Connected to the server: {host} {port}'.format(self.host, self.port))
+        logging.info('Connected to the server: {} {}'.format(self.host, self.port))
         IOLoop.instance().start()
 
     def close_connection(self):
@@ -47,7 +47,7 @@ class Flashlight(object):
     def ch_color(self):
         value = char_sec_to_int(self.command[3:])
         rgb = '#{}'.format(hex(value)[2:])
-        self.color = self.REV_COLORS[value]
+        self.color = rgb
         logging.info('Switched to {color}'.format(self.color))
 
     def _callback(self):
