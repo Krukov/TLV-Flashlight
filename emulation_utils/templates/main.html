@@ -12,9 +12,9 @@
     <div class="container">
         {% for address, flash in flashlights %}
         <div class="well">
-            <h2>{{ address }}</h2>
+            <h2>{{ flash['ip'] }}<small>{{ address }}</small></h2>
             <div class="row">
-                <div class="col-lg-4" style="background: {{ flash.color }}; height: 100px">
+                <div class="col-lg-4" style="background: {{ flash['color'] }}; height: 100px">
                 </div>
                 <div class="col-lg-8">
                     <form role="form" action="" method="post" name="{{ address }}">
@@ -24,16 +24,16 @@
                         </div>
                         <div class="input-group">
                             <span class="input-group-btn">
-                                <button class="btn btn-default" type="submit" name="COLOR" value="true">COLOR</button>
+                                <button class="btn btn-default" type="submit" name="color" value="true">COLOR</button>
                             </span>
-                            <input type="text" class="form-control" name="color_val" placeholder="{{ flash.color[1:] }}" pattern="/d{0:6">
+                            <input type="text" class="form-control" name="color_val" placeholder="{{ flash['color'] }}" pattern="[a-fA-F\d]{6}">
                          </div><!-- /input-group -->
                         <input type="hidden" name="address" value="{{ address }}">
                     </form>
                 </div>
             </div>
-            {% end %}
         </div>
+        {% end %}
     </div>
 </body>
 </html>

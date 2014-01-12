@@ -2,8 +2,6 @@
 
 import struct
 
-from collections import namedtuple
-
 from tornado.tcpserver import TCPServer
 from tornado.ioloop import IOLoop
 
@@ -13,7 +11,6 @@ TLV = {
     'OFF': {'type': 0x13, 'length': 0},
     'COLOR': {'type': 0x20, 'length': 3, 'value': COLORS},
     }
-flash = namedtuple('flash', ['status', 'color'])
 
 def hex_to_str(num):
     bin_form = bin(num)[2:]
@@ -33,32 +30,22 @@ class FlashLightConnection(object):
     def __init__(self, stream, address, flashlights={}):
         self.stream = stream
         self.address = address
-        self.flash = flashlights[address[1]] = flash(None, None)
+        self.flash = flashlights[str(address[1])] = {'status': None, 'color': None, 'send': self.send, 'ip': address[0]}
         self.flashlights = flashlights
 
         self.stream.set_close_callback(self._on_close)
-        #self.send('ON')
+        self.stream.read_until('\n', self._on_read)
         self.stream.reading()
 
     def send(self, command, value=None):
-        self.stream.write(tlv_command(command, value), self._on_write_complete)
-
-    def _on_write_complete(self):
-        self.stream.read_until('\n', self._on_read)
+        self.stream.write(tlv_command(command, value))
 
     def _on_read(self, data):
-        if 'ON' in data:
-            self.flash.status = 'ON'
-            self.flash.color = data[-6:]
-        elif 'OFF' in data:
-            self.flash.status = 'ON'
-            self.flash.color = data[-6:]
-        else:
-            self.flash.color = data
-
+        self.flash['status'] = data[:4].replace(' ', '')
+        self.flash['color'] = data[4:]
 
     def _on_close(self):
-        del self.flashlights[self.address[1]]
+        del self.flashlights[str(self.address[1])]
 
 
 class FlashLightServ(TCPServer):

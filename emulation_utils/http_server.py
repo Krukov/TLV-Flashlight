@@ -33,11 +33,13 @@ class MainHandler(tornado.web.RequestHandler):
         self.render_page()
 
     def post(self):
-        print self.request.body
-        data = {i.split('=')[0]: i.split('=')[0] for i in self.request.body.split('&')}
-        print data
+        data = {i.split('=')[0]: i.split('=')[1] for i in self.request.body.split('&')}
+        flash = self.application.flashlights[data['address']]
+
         if 'status' in data:
-            print data['status']
+            flash['send'](data['status'])
+        if 'color' in data:
+            flash['send']('COLOR', value=int(data['color_val'], 16))
         self.render_page()
 
     def render_page(self):

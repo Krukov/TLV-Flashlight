@@ -36,19 +36,23 @@ class Flashlight(object):
 
     def on(self):
         self.status = 'ON'
-        logging.info('Status changed to {status}'.format(self.status))
+        logging.info('Status changed to {status}'.format(status=self.status))
+        self.send_status()
 
     def off(self):
         self.status = 'OFF'
-        logging.info('Status changed to {status}'.format(self.status))
-        self.close_connection()
-        sys.exit()
+        logging.info('Status changed to {status}'.format(status=self.status))
+        self.send_status()
 
     def ch_color(self):
         value = char_sec_to_int(self.command[3:])
         rgb = '#{}'.format(hex(value)[2:])
         self.color = rgb
-        logging.info('Switched to {color}'.format(self.color))
+        logging.info('Switched to {color}'.format(color=self.color))
+        self.send_status()
+
+    def send_status(self):
+        self.stream.write('{:<4}{}\n'.format(self.status, self.color))
 
     def _callback(self):
         self.stream.read_bytes(1, self._collect_command)
@@ -61,7 +65,6 @@ class Flashlight(object):
         self.command.append(data)
         if len(self.command) == 3:
             self.length = char_sec_to_int(self.command[1:3])
-            print 'len = ', self.length
         elif self.length:
             self.length -= 1
         if not self.length and len(self.command) >= 3:
