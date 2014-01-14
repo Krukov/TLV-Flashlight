@@ -35,14 +35,18 @@ class FlashLightConnection(object):
 
         self.stream.set_close_callback(self._on_close)
         self.stream.read_until('\n', self._on_read)
-        self.stream.reading()
 
     def send(self, command, value=None):
+        #if not self.stream.reading():
         self.stream.write(tlv_command(command, value))
+
+    def _read(self):
+        self.stream.read_until('\n', self._on_read)
 
     def _on_read(self, data):
         self.flash['status'] = data[:4].replace(' ', '')
         self.flash['color'] = data[4:]
+        self._read()
 
     def _on_close(self):
         del self.flashlights[str(self.address[1])]

@@ -13,22 +13,27 @@ COLORS = {'red': 0xff0000, 'blue': 0x0000ff, 'green': 0x00ff00}
 
 
 class Flashlight(object):
-    REV_COLORS = {val: key for key, val in COLORS.items()}
+    """
+    TCP клиент фонарика
+    принимает TLV комманды от :host :port и выполняет метод
+    Словарь TLV выполняет функцию роутера команда -> метод для вызова
+    """
 
     def __init__(self, status='OFF', host='127.0.0.1', port=9999):
         self.status = status
         self.host = host
         self.port = port
         self.color = '#ffffff'
-        self._null_command()
+        self._clear_command()
 
     def connect(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.stream = IOStream(s)
-        self.stream.connect((self.host, self.port), self._callback)
-        self.stream.reading()
-        logging.info('Connected to the server: {} {}'.format(self.host, self.port))
+        self._connect()
+        self.stream.set_close_callback(self.close_connection)
         IOLoop.instance().start()
+        if self.stream.closed():
+            logging.error("Can't connect to {} {}".format(self.host, self.port))
+            #self.close_connection()
+
 
     def close_connection(self):
         self.stream.close()
@@ -52,14 +57,26 @@ class Flashlight(object):
         self.send_status()
 
     def send_status(self):
-        self.stream.write('{:<4}{}\n'.format(self.status, self.color))
+        if not self.stream.reading():
+            self.stream.write('{:<4}{}\n'.format(self.status, self.color), self._callback)
+
+    def _connect(self):
+        logging.info('Connecting to the server: {} {}'.format(self.host, self.port))
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.stream = IOStream(s)
+        self.stream.connect((self.host, self.port), self._callback)
+        self.stream.set_close_callback(self._on_close)
+
+    def _on_close(self):
+        self._connect()
+        self.send_status()
 
     def _callback(self):
         self.stream.read_bytes(1, self._collect_command)
 
-    def _null_command(self):
+    def _clear_command(self):
         self.command = []
-        self.length = None
+        self.length = 0
 
     def _collect_command(self, data):
         self.command.append(data)
@@ -73,8 +90,8 @@ class Flashlight(object):
 
     def _run_command(self):
         TLV[ord(self.command[0])]['callback'](self)
-        print self.status
-        self._null_command()
+        print self.status, self.color
+        self._clear_command()
 
 
 def char_sec_to_int(sec):
