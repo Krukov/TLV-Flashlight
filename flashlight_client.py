@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import socket
-import sys
+import datetime
 import signal
 import logging
 
@@ -19,25 +19,34 @@ class Flashlight(object):
     Словарь TLV выполняет функцию роутера команда -> метод для вызова
     """
 
-    def __init__(self, status='OFF', host='127.0.0.1', port=9999):
+    def __init__(self, status='OFF', host='127.0.0.1', port=9999, timeout=2):
         self.status = status
         self.host = host
         self.port = port
+        self.timeout = datetime.timedelta(seconds=timeout)
+        self._init_time = datetime.datetime.now()
         self.color = '#ffffff'
         self._clear_command()
 
     def connect(self):
-        self._connect()
-        self.stream.set_close_callback(self.close_connection)
-        IOLoop.instance().start()
+        logging.info('Connecting to the server: {} {}'.format(self.host, self.port))
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.stream = IOStream(s)
+        self.stream.set_close_callback(self._on_close)
+        self.stream.connect((self.host, self.port), self._on_connect)
+        while self._init_time + self.timeout > datetime.datetime.now():
+            print 'start'
+            self.ioloop = IOLoop.instance()
+            self.ioloop.initialize()
+            self.ioloop.start()
         if self.stream.closed():
             logging.error("Can't connect to {} {}".format(self.host, self.port))
-            #self.close_connection()
-
 
     def close_connection(self):
+        print 'stop'
         self.stream.close()
-        IOLoop.instance().stop()
+        self.ioloop.stop()
+        self.ioloop.close()
 
     def on(self):
         self.status = 'ON'
@@ -56,20 +65,16 @@ class Flashlight(object):
         logging.info('Switched to {color}'.format(color=self.color))
         self.send_status()
 
-    def send_status(self):
+    def send_status(self, callback=None):
         if not self.stream.reading():
-            self.stream.write('{:<4}{}\n'.format(self.status, self.color), self._callback)
-
-    def _connect(self):
-        logging.info('Connecting to the server: {} {}'.format(self.host, self.port))
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.stream = IOStream(s)
-        self.stream.connect((self.host, self.port), self._callback)
-        self.stream.set_close_callback(self._on_close)
+            self.stream.write('{:<4}{}\n'.format(self.status, self.color), callback=callback)
 
     def _on_close(self):
-        self._connect()
-        self.send_status()
+        self.close_connection()
+
+    def _on_connect(self):
+        print 'connect'
+        self._callback()
 
     def _callback(self):
         self.stream.read_bytes(1, self._collect_command)
@@ -105,7 +110,7 @@ TLV = {
 
 
 if __name__ == '__main__':
-    flash = Flashlight()
+    flash = Flashlight(host='192.168.1.35')
     signal.signal(signal.SIGINT, flash.close_connection)
 
     flash.connect()
