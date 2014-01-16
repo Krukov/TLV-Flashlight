@@ -12,17 +12,16 @@ TLV = {
     'COLOR': {'type': 0x20, 'length': 3, 'value': COLORS},
     }
 
-def hex_to_str(num):
-    bin_form = bin(num)[2:]
-    return ''.join([chr(int(bin_form[i*8:i*8+8], 2)) for i in range(len(bin_form)/8)])
 
-
-def tlv_command(name, value=None):
-    resp = TLV[name]
-    value = hex_to_str(value) if value else ''
-    length = ''.join((chr(int(i)) for i in '{:0>2}'.format(resp['length'])))
-    command = b'{type}{length}{value}'.format(type=chr(resp['type']), length=length, value=value)
-    return command
+def pack_command(command, value=None):
+    command = TLV[command]
+    pat = '>BBB' + 'B' * command['length']
+    if command['length'] and value:
+        values = [value // 256 ** i % 256 for i in reversed(xrange(command['length']))]
+    else:
+        values = []
+    to_pack = [command['type'], command['length']/10, command['length']] + values
+    return struct.pack(pat, *to_pack)
 
 
 class FlashLightConnection(object):
@@ -38,7 +37,7 @@ class FlashLightConnection(object):
 
     def send(self, command, value=None):
         #if not self.stream.reading():
-        self.stream.write(tlv_command(command, value))
+        self.stream.write(pack_command(command, value))
 
     def _read(self):
         self.stream.read_until('\n', self._on_read)

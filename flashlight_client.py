@@ -5,6 +5,8 @@ import datetime
 import signal
 import logging
 
+from collections import defaultdict
+
 from tornado.ioloop import IOLoop
 from tornado.iostream import IOStream
 
@@ -36,17 +38,15 @@ class Flashlight(object):
         self.stream.connect((self.host, self.port), self._on_connect)
         while self._init_time + self.timeout > datetime.datetime.now():
             print 'start'
-            self.ioloop = IOLoop.instance()
-            self.ioloop.initialize()
-            self.ioloop.start()
+            IOLoop.instance().start()
         if self.stream.closed():
             logging.error("Can't connect to {} {}".format(self.host, self.port))
 
     def close_connection(self):
         print 'stop'
         self.stream.close()
-        self.ioloop.stop()
-        self.ioloop.close()
+        IOLoop.instance().stop()
+        IOLoop.instance().close()
 
     def on(self):
         self.status = 'ON'
@@ -102,11 +102,14 @@ class Flashlight(object):
 def char_sec_to_int(sec):
     return sum(ord(dig) * (256**index) for index, dig in enumerate(reversed(sec)))
 
-TLV = {
+
+S_TLV = {
     0x12: {'type': 'ON', 'length': 0, 'callback': Flashlight.on},
     0x13: {'type': 'OFF', 'length': 0, 'callback': Flashlight.off},
     0x20: {'type': 'COLOR', 'length': 3, 'callback': Flashlight.ch_color},
     }
+TLV = defaultdict(lambda: defaultdict(dict))
+TLV.update(**{key: defaultdict(None, **value) for key, value in S_TLV.iteritems()})
 
 
 if __name__ == '__main__':
