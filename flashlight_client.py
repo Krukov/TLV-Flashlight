@@ -9,6 +9,7 @@ from collections import defaultdict
 
 from tornado.ioloop import IOLoop
 from tornado.iostream import IOStream
+from tornado import autoreload
 
 
 COLORS = {'red': 0xff0000, 'blue': 0x0000ff, 'green': 0x00ff00}
@@ -36,14 +37,11 @@ class Flashlight(object):
         self.stream = IOStream(s)
         self.stream.set_close_callback(self._on_close)
         self.stream.connect((self.host, self.port), self._on_connect)
-        while self._init_time + self.timeout > datetime.datetime.now():
-            print 'start'
-            IOLoop.instance().start()
+        IOLoop.instance().start()
         if self.stream.closed():
             logging.error("Can't connect to {} {}".format(self.host, self.port))
 
     def close_connection(self):
-        print 'stop'
         self.stream.close()
         IOLoop.instance().stop()
         IOLoop.instance().close()
@@ -73,7 +71,6 @@ class Flashlight(object):
         self.close_connection()
 
     def _on_connect(self):
-        print 'connect'
         self._callback()
 
     def _callback(self):
@@ -95,7 +92,6 @@ class Flashlight(object):
 
     def _run_command(self):
         TLV[ord(self.command[0])]['callback'](self)
-        print self.status, self.color
         self._clear_command()
 
 
@@ -113,7 +109,7 @@ TLV.update(**{key: defaultdict(None, **value) for key, value in S_TLV.iteritems(
 
 
 if __name__ == '__main__':
-    flash = Flashlight(host='192.168.1.35')
+    flash = Flashlight()
     signal.signal(signal.SIGINT, flash.close_connection)
 
     flash.connect()

@@ -14,14 +14,22 @@
         <div class="well">
             <h2>{{ flash['ip'] }}<small>{{ address }}</small></h2>
             <div class="row">
-                <div class="col-lg-4" style="background: {{ flash['color'] }}; height: 100px">
-                </div>
+                {% if flash['status'] == 'ON' or flash['status'] is None %}
+                    <div class="col-lg-4" style="background: {{ flash['color'] }}; height: 100px"></div>
+                {% else %}
+                    <div class="col-lg-4" style="background: #ffffff; height: 100px"></div>
+                {% end %}
                 <div class="col-lg-8">
                     <form role="form" action="" method="post" name="{{ address }}">
-                        <div class="btn-group">
-                            <button type="submit" class="btn btn-success" name="status" value="ON">ON</button>
-                            <button type="submit" class="btn btn-warning" name="status" value="OFF">OFF</button>
-                        </div>
+                        {% if flash['status'] == 'ON' or flash['status'] is None %}
+                            <button type="submit" class="btn" name="status" value="OFF">
+                                <span class="glyphicon glyphicon-off text-danger"> OFF</span>
+                            </button>
+                        {% elif flash['status'] == 'OFF' %}
+                            <button type="submit" class="btn" name="status" value="ON">
+                                <span class="glyphicon glyphicon-off text-success"> ON</span>
+                            </button>
+                        {% end %}
                         <div class="input-group">
                             <span class="input-group-btn">
                                 <button class="btn btn-default" type="submit" name="color" value="true">COLOR</button>

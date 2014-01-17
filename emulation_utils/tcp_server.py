@@ -36,7 +36,6 @@ class FlashLightConnection(object):
         self.stream.read_until('\n', self._on_read)
 
     def send(self, command, value=None):
-        #if not self.stream.reading():
         self.stream.write(pack_command(command, value))
 
     def _read(self):

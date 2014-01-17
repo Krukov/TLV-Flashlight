@@ -38,9 +38,9 @@ class MainHandler(tornado.web.RequestHandler):
 
         if 'status' in data:
             flash['send'](data['status'])
-        if 'color' in data:
+        if 'color' in data and data['color_val']:
             flash['send']('COLOR', value=int(data['color_val'], 16))
-        self.render_page()
+        self.redirect('/control')
 
     def render_page(self):
         flashlights = self.application.flashlights.iteritems()
